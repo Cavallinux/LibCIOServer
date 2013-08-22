@@ -1,0 +1,87 @@
+<project name="LibCIO Server Mock" basedir=".">
+	<description description="Mock Server de aplicacion CIO" />
+	<property file="${basedir}/res/build.properties" />
+
+	<path id="classpath" description="Classpath del proyecto">
+		<fileset dir="${project.lib.dir}" includes="*.jar" />
+	</path>
+
+	<target name="clean" description="Borra los directorios binarios y distribuibles">
+		<delete verbose="true" dir="${project.build.dir}" />
+		<delete verbose="true" dir="${project.dist.dir}" />
+		<delete verbose="true" dir="${project.jar.dir}" />
+	</target>
+
+	<target name="create" depends="clean" description="Borra los directorios binarios y distribuibles">
+		<mkdir dir="${project.build.dir}" />
+		<mkdir dir="${project.dist.dir}" />
+		<mkdir dir="${project.jar.dir}" />
+	</target>
+
+	<target name="compile" depends="create" description="Compila los fuentes del proyecto">
+		<javac verbose="true" srcdir="${project.src.dir}" destdir="${project.build.dir}" debug="true" deprecation="true" classpathref="classpath" />
+	</target>
+
+	<target name="run" depends="compile" description="Ejecuta el server">
+		<java classname="cl.bancochile.monitor.tx.Server" fork="true">
+			<jvmarg value="-Dcioserver.logs.dir=${basedir}/logs" />
+			<jvmarg value="-Dlog4j.config.file=${project.conf.dir}/log4j.properties" />
+			<jvmarg value="-Dmain.config.file=${project.conf.dir}/libcioserversocket.properties" />
+			<classpath>
+				<path refid="classpath" />
+				<pathelement path="${project.build.dir}" />
+			</classpath>
+		</java>
+	</target>
+
+	<target name="jar" depends="compile" description="Genera el jar con las clases cliente compiladas.">
+		<tstamp>
+			<format property="build.time" pattern="yyyy-MM-dd HH:mm:ss z" />
+		</tstamp>
+		<jar jarfile="${jar.file.name}" basedir="${project.build.dir}" compress="true">
+			<manifest>
+				<attribute name="Implementation-Title" value="${jar.impl.name}" />
+				<attribute name="Implementation-Version" value="${jar.impl.version}" />
+				<attribute name="Build-Time" value="${build.time}" />
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="deploy" depends="jar" description="Copia jar a directorio de ejecucion">
+		<copy todir="${deploy.dir}/lib" verbose="true">
+			<fileset dir="${project.lib.dir}">
+				<include name="**/*.jar" />
+			</fileset>
+			<fileset file="${jar.file.name}" />
+		</copy>
+
+		<copy todir="${deploy.dir}" verbose="true">
+			<fileset file="${script.file.name}" />
+		</copy>
+
+		<copy todir="${deploy.dir}/conf" verbose="true">
+			<fileset dir="${project.conf.dir}">
+				<include name="*.properties" />
+			</fileset>
+		</copy>
+	</target>
+
+	<target name="dist" depends="jar" description="Crea directorio con jars necesarios y script de arranque de aplicacion.">
+		<copy todir="${project.dist.dir}/lib" verbose="true">
+			<fileset dir="${project.lib.dir}">
+				<include name="*.jar" />
+			</fileset>
+			<fileset file="${jar.file.name}" />
+		</copy>
+
+		<copy todir="${project.dist.dir}" verbose="true">
+			<fileset file="${script.file.name}" />
+		</copy>
+
+		<copy todir="${project.dist.dir}/conf" verbose="true">
+			<fileset dir="${project.conf.dir}">
+				<include name="*.properties" />
+			</fileset>
+		</copy>
+	</target>
+</project>
